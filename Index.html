@@ -1,0 +1,614 @@
+<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:light dark}body{margin:0}</style></head><body><title>Payvandlash laboratoriyasi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Layout: one lab step at a time; a dark 3D bench sits at the centre of the first step, everything else is a clean worksheet. */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#14202B; --mute:#5A6877; --line:#D3DAE2;
+  --accent:#D9461C; --accent-ink:#FFFFFF; --ok:#1B7F52; --bad:#BE3434; --steel:#2F4A63; --soft:#F3F6F9;
+  --scene:#0F1822; --scene-ink:#E8EDF2; --scene-mute:#93A1AF;
+  --f-head:'Oswald','Arial Narrow',sans-serif; --f-body:'IBM Plex Sans',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C131B; --surface:#151F2A; --ink:#E8EDF2; --mute:#95A3B1; --line:#263444;
+  --accent:#FF7A4D; --accent-ink:#1A0C06; --ok:#4CC38A; --bad:#FF7070; --steel:#86A9C9; --soft:#1B2735; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C131B; --surface:#151F2A; --ink:#E8EDF2; --mute:#95A3B1; --line:#263444;
+  --accent:#FF7A4D; --accent-ink:#1A0C06; --ok:#4CC38A; --bad:#FF7070; --steel:#86A9C9; --soft:#1B2735; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);margin-bottom:16px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h1{font-family:var(--f-head);font-weight:600;font-size:22px;letter-spacing:.02em;margin:0;text-transform:uppercase}
+.score{font-family:var(--f-mono);font-weight:600;font-size:15px;color:var(--accent);white-space:nowrap}
+.steps{display:flex;gap:6px;margin-top:10px}
+.steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--steel)} .steps i.cur{background:var(--accent)}
+h2{font-family:var(--f-head);font-weight:500;font-size:26px;margin:4px 0 6px;letter-spacing:.01em;text-wrap:balance}
+h3{font-size:16px;margin:20px 0 6px;font-weight:600}
+p{margin:0 0 10px} .mute{color:var(--mute)} .small{font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+label{display:block;font-weight:500;font-size:14px;margin:12px 0 4px}
+input[type=text],select{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:1px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:12px 18px;min-height:46px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+button.sec{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stage{background:var(--scene);border-radius:12px;overflow:hidden;position:relative}
+#scene{width:100%;aspect-ratio:4/3;max-height:56vh;touch-action:pan-y;cursor:grab}
+#scene canvas{display:block;width:100%;height:100%}
+.pills{display:flex;gap:6px;padding:10px;flex-wrap:wrap}
+.pills span{flex:1 1 40%;font-size:12px;color:var(--scene-mute);border:1px solid #2a3949;border-radius:20px;padding:4px 8px;text-align:center}
+.pills span.on{background:#E4572E;color:#fff;border-color:#E4572E}
+.hint3d{position:absolute;top:8px;left:12px;font-size:12px;color:var(--scene-mute)}
+.sl{margin:14px 0}
+.sl .l{display:flex;justify-content:space-between;font-size:14px;font-weight:500}
+.sl .l b{font-family:var(--f-mono);color:var(--accent);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent);height:34px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+th{font-weight:600;color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td.n{font-family:var(--f-mono)}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600}
+.tag.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tag.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.note{border-left:4px solid var(--steel);background:var(--soft);padding:10px 12px;border-radius:0 8px 8px 0;font-size:14px;margin:10px 0}
+.note.bad{border-color:var(--bad)} .note.ok{border-color:var(--ok)}
+svg.fig{width:100%;height:auto;max-height:260px;background:var(--soft);border-radius:8px}
+svg text{font-family:var(--f-body)}
+.q{padding:14px 0;border-bottom:1px solid var(--line)}
+.q:last-child{border:0}
+.q .t{font-weight:500;margin-bottom:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer;min-height:44px}
+.opt input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.big{font-family:var(--f-head);font-size:64px;line-height:1;color:var(--accent);font-weight:600}
+.code{font-family:var(--f-mono);font-size:14px;background:var(--soft);border:1px dashed var(--line);border-radius:8px;padding:10px;word-break:break-all}
+.desig{font-family:var(--f-mono);font-weight:600;font-size:15px}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--steel)}
+.sc{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}h2{font-size:23px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand"><h1>Payvandlash laboratoriyasi</h1><div class="score" id="liveScore"></div></div>
+  <div class="steps" id="steps"></div>
+</header>
+
+<!-- 0 INTRO -->
+<section id="s-intro" data-step="0">
+  <h2>Bosim ostida payvandlash</h2>
+  <p class="mute">Laboratoriya ishi: kontaktli nuqtali payvandlashni 3D stendda bajaring, so‘ng o‘lchamlar, chizmadagi belgi va qisqa test bo‘yicha o‘zingizni tekshiring.</p>
+  <div class="card">
+    <label for="inName">Ism va familiya</label>
+    <input type="text" id="inName" autocomplete="name" placeholder="Masalan, Aliyev Vali">
+    <label for="inGroup">Guruh</label>
+    <input type="text" id="inGroup" placeholder="Masalan, MX-21">
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Baholash (jami 100 ball)</h3>
+    <table>
+      <tr><td>1. Birikma o‘lchamlari (s, d, h, g, t, c, u, B)</td><td class="n">20</td></tr>
+      <tr><td>2. Chizmadagi belgi (GOST 15878-79, GOST 2.312-72)</td><td class="n">24</td></tr>
+      <tr><td>3. Test, 13 savol</td><td class="n">26</td></tr>
+      <tr><td>4. Payvandlash simulyatori (oxirgi, eng qiziqarli qism)</td><td class="n">30</td></tr>
+    </table>
+    <p class="small mute" style="margin:10px 0 0">Baho: 86–100 ball — 5, 71–85 — 4, 55–70 — 3, 54 va past — 2. Har bo‘limdagi javoblar saqlanadi va keyin o‘zgartirib bo‘lmaydi. Ballar va to‘g‘ri javoblar faqat oxirida ko‘rsatiladi.</p>
+  </div>
+  <button id="btnStart">Boshlash</button>
+  <div id="startMsg" class="note bad" hidden style="margin-top:12px"></div>
+  <div id="tchBox" hidden class="card" style="margin-top:24px">
+    <b>Ustoz uchun</b>
+    <p class="small mute" style="margin:4px 0 10px">Talabalarning topshirgan natijalari jadvalda ko‘rinadi.</p>
+    <button class="sec" id="btnTch">Natijalar jadvalini ochish</button>
+  </div>
+</section>
+
+<!-- 2 OLCHAM -->
+<section id="s-ol" data-step="1" hidden>
+  <h2>1. Birikma o‘lchamlari</h2>
+  <p class="mute">Rasmlardagi harflar qaysi o‘lchamga tegishli ekanini tanlang. Har biri 2,5 ball. Saqlangandan keyin o‘zgartirib bo‘lmaydi.</p>
+  <div class="card">
+    <b>Nuqtaning kesimi</b>
+    <svg class="fig" viewBox="0 0 320 200" role="img" aria-label="Nuqta kesimi">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8z" fill="#1c2733"/></marker></defs>
+      <path d="M20 70 H128 L135 76 H165 L172 70 H280 V100 H20Z" fill="#B9C6D2" stroke="#1c2733"/>
+      <path d="M20 100 H280 V130 H172 L165 124 H135 L128 130 H20Z" fill="#9AAEBF" stroke="#1c2733"/>
+      <polygon points="110,10 190,10 190,40 172,70 165,76 135,76 128,70 110,40" fill="#C77D3A" stroke="#6b3d14"/>
+      <polygon points="110,190 190,190 190,160 172,130 165,124 135,124 128,130 110,160" fill="#C77D3A" stroke="#6b3d14"/>
+      <ellipse cx="150" cy="100" rx="28" ry="20" fill="#F2A65A" stroke="#1c2733"/>
+      <g stroke="#1c2733" stroke-width="1.6" fill="none">
+        <line x1="122" y1="100" x2="178" y2="100" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <line x1="128" y1="100" x2="128" y2="82" marker-start="url(#ar)" marker-end="url(#ar)" transform="translate(-8,0)"/>
+        <line x1="292" y1="70" x2="292" y2="100" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <line x1="280" y1="70" x2="298" y2="70" stroke-dasharray="3 3"/><line x1="280" y1="100" x2="298" y2="100" stroke-dasharray="3 3"/>
+        <line x1="95" y1="55" x2="131" y2="73"/>
+      </g>
+      <g font-weight="700" font-size="13" text-anchor="middle" fill="#fff">
+        <circle cx="150" cy="86" r="10" fill="#1F6FB2"/><text x="150" y="91">A</text>
+        <circle cx="88" cy="51" r="10" fill="#C0392B"/><text x="88" y="56">B</text>
+        <circle cx="306" cy="85" r="10" fill="#2E8B57"/><text x="306" y="90">C</text>
+        <circle cx="104" cy="84" r="10" fill="#8E44AD"/><text x="104" y="89">D</text>
+      </g>
+    </svg>
+    <div class="grid2" id="olA"></div>
+  </div>
+  <div class="card">
+    <b>Nuqtalar joylashuvi (yuqoridan)</b>
+    <svg class="fig" viewBox="0 0 320 200" role="img" aria-label="Yuqoridan ko‘rinish">
+      <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8z" fill="#1c2733"/></marker></defs>
+      <rect x="20" y="50" width="230" height="120" fill="#B9C6D2" stroke="#1c2733"/>
+      <g fill="#F2A65A" stroke="#1c2733"><circle cx="60" cy="85" r="9"/><circle cx="110" cy="85" r="9"/><circle cx="160" cy="85" r="9"/><circle cx="210" cy="85" r="9"/><circle cx="60" cy="135" r="9"/><circle cx="110" cy="135" r="9"/><circle cx="160" cy="135" r="9"/><circle cx="210" cy="135" r="9"/></g>
+      <g stroke="#1c2733" stroke-width="1.6" fill="none">
+        <line x1="60" y1="38" x2="110" y2="38" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <line x1="60" y1="42" x2="60" y2="76" stroke-dasharray="3 3"/><line x1="110" y1="42" x2="110" y2="76" stroke-dasharray="3 3"/>
+        <line x1="236" y1="85" x2="236" y2="135" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <line x1="266" y1="50" x2="266" y2="85" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <line x1="250" y1="50" x2="272" y2="50" stroke-dasharray="3 3"/><line x1="219" y1="85" x2="272" y2="85" stroke-dasharray="3 3"/>
+        <line x1="300" y1="50" x2="300" y2="170" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <line x1="250" y1="170" x2="306" y2="170" stroke-dasharray="3 3"/>
+      </g>
+      <g font-weight="700" font-size="13" text-anchor="middle" fill="#fff">
+        <circle cx="85" cy="22" r="10" fill="#1F6FB2"/><text x="85" y="27">E</text>
+        <circle cx="236" cy="110" r="10" fill="#2E8B57"/><text x="236" y="115">F</text>
+        <circle cx="284" cy="68" r="10" fill="#C0392B"/><text x="284" y="73">G</text>
+        <circle cx="300" cy="110" r="10" fill="#8E44AD"/><text x="300" y="115">H</text>
+      </g>
+    </svg>
+    <div class="grid2" id="olB"></div>
+  </div>
+  <div id="olRes"></div>
+  <div class="row"><button id="btnOlCheck">Saqlash va keyingisi</button></div>
+</section>
+
+<!-- 3 BELGI -->
+<section id="s-bel" data-step="2" hidden>
+  <h2>2. Chizmadagi belgi</h2>
+  <p class="mute">Har bir holat uchun belgini yig‘ing. Pastda belgi chizmada qanday ko‘rinishi chiqadi. Har holat 8 ball.</p>
+  <div id="belBox"></div>
+  <div id="belRes"></div>
+  <div class="row"><button id="btnBelCheck">Saqlash va keyingisi</button></div>
+</section>
+
+<!-- 4 TEST -->
+<section id="s-test" data-step="3" hidden>
+  <h2>3. Test</h2>
+  <p class="mute">13 savol, har biri 2 ball. Saqlangandan keyin javoblarni o‘zgartirib bo‘lmaydi, to‘g‘ri javoblar natija sahifasida ko‘rsatiladi.</p>
+  <div class="card" id="testBox"></div>
+  <div id="testRes"></div>
+  <div class="row"><button id="btnTestCheck">Saqlash va keyingisi</button></div>
+</section>
+
+<!-- 1 SIM -->
+<section id="s-sim" data-step="4" hidden>
+  <h2>4. Nuqtali payvandlash simulyatori</h2>
+  <div class="card">
+    <b>Bu bo‘limda nima qilasiz</b>
+    <p style="margin:6px 0 0">Siz payvandlash stanogidagi kabi uchta sozlamani tanlab, ikki po‘lat varaqni nuqtali payvandlaysiz. Maqsad: sifatli nuqta hosil qilish. Yo‘l-yo‘riq quyida.</p>
+    <h3>1. Topshiriq</h3>
+    <p style="margin:0">Po‘lat varaqlar, qalinligi <b>s = 1,0 mm</b> (A guruhi). Kerakli yadro diametri <b>d = 4,0 mm</b>. Nuqta quyidagi to‘rt shartni bajarsa, qabul qilinadi:</p>
+    <table style="margin-top:8px">
+      <tr><td>Yadro diametri d</td><td class="n">3,5–4,5 mm</td></tr>
+      <tr><td>Kirib erish chuqurligi h</td><td class="n">20–80 %</td></tr>
+      <tr><td>Elektrod botig‘i g</td><td class="n">20 % dan oshmasin</td></tr>
+      <tr><td>Metall sachramasin</td><td class="n">sachrash yo‘q</td></tr>
+    </table>
+    <h3>2. Uchta sozlama nimani o‘zgartiradi</h3>
+    <table>
+      <tr><td><b>I</b> — tok (kA)</td><td>Tok oshsa, issiqlik juda tez ko‘payadi (tokning kvadratiga, Q = I²·R·t). Kam bo‘lsa, metall erimaydi.</td></tr>
+      <tr><td><b>t</b> — vaqt (s)</td><td>Tok qancha uzoq o‘tsa, issiqlik shuncha ko‘p. Vaqt ikki baravar oshsa, issiqlik ikki baravar oshadi.</td></tr>
+      <tr><td><b>P</b> — kuch (kN)</td><td>Kuch oshsa, kontakt yaxshilanadi va qarshilik kamayadi. Lekin juda katta kuch elektrodni varaqqa botirib yuboradi (g oshadi). Juda kam kuchda kontakt yomon: issiqlik bir joyga to‘planib, metall sachrashi mumkin.</td></tr>
+    </table>
+    <h3>3. Qanday ishlaysiz</h3>
+    <ol style="margin:0;padding-left:20px">
+      <li>Slayderlarni suring (har safar faqat bittasini o‘zgartiring, shunda nima o‘zgarganini ko‘rasiz).</li>
+      <li>“Payvandla” tugmasini bosing.</li>
+      <li>3D rasmda to‘rt bosqichni kuzating: oldindan siqish, tok ulanadi, tok o‘chadi (bosim saqlanadi), bosim olinadi.</li>
+      <li>Pastda natijani o‘qing: R, Q, d, h, g. Agar nuqta qabul qilinmasa, sahifa nima noto‘g‘riligini yozadi. Shu maslahat bo‘yicha sozlamani o‘zgartirib, qayta urining.</li>
+      <li>Nuqta qabul qilinganda “Yakunlash va natijani ko‘rish” tugmasi bilan davom eting.</li>
+    </ol>
+    <h3>4. Qanday maslahatlar bor</h3>
+    <p style="margin:0">Avval nuqta umuman hosil bo‘ladigan tokni toping. So‘ng vaqt bilan diametrni sozlang. Eng oxirida kuch bilan botiqni tuzating. R va Q ko‘rsatkichlariga qarang: Q juda kichik bo‘lsa nuqta kichik yoki hosil bo‘lmaydi, juda katta bo‘lsa metall sachraydi.</p>
+    <h3>5. Ball qanday beriladi</h3>
+    <p style="margin:0">Qabul qilingan nuqtani 1–3-urinishda topsangiz 30 ball, 4–6-urinishda 25, undan keyin 20. Qabul qilingan nuqta chiqmasa ham, nuqta hosil qilgan bo‘lsangiz 10 ball olasiz. Ballar oxirida ko‘rsatiladi.</p>
+  </div>
+  <div class="stage">
+    <div id="scene"></div>
+    <div class="hint3d">Aylantirish: barmoq bilan chapga yoki o‘ngga suring</div>
+    <div class="pills" id="pills"><span>1 Oldindan siqish</span><span>2 Tok ulanadi</span><span>3 Tok o‘chadi, bosim saqlanadi</span><span>4 Bosim olinadi</span></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="sec" id="btnCut">Kesim ko‘rinishi</button>
+    <button class="sec" id="btnReset">Ko‘rinishni tiklash</button>
+  </div>
+  <div class="card">
+    <div class="sl"><div class="l"><span>Payvandlash toki I</span><b id="vI">6 kA</b></div><input type="range" id="rI" min="4" max="16" step="0.5" value="6" aria-label="Tok"></div>
+    <div class="sl"><div class="l"><span>Tok o‘tish vaqti t</span><b id="vT">0,10 s</b></div><input type="range" id="rT" min="0.05" max="0.5" step="0.01" value="0.1" aria-label="Vaqt"></div>
+    <div class="sl"><div class="l"><span>Siqish kuchi P</span><b id="vP">2,0 kN</b></div><input type="range" id="rP" min="1" max="6" step="0.5" value="2" aria-label="Kuch"></div>
+    <div class="small mute" id="calc">Q = I²·R·t hisobi payvandlagandan keyin chiqadi.</div>
+    <div class="row" style="margin-top:12px"><button id="btnWeld">Payvandla</button><span class="small mute" id="attLbl">Urinish: 0</span></div>
+  </div>
+  <div id="simRes" class="card" hidden></div>
+  <div id="simLog" class="card" hidden><b>Urinishlar</b><div style="overflow-x:auto"><table id="logT"><thead><tr><th>№</th><th>I</th><th>t</th><th>P</th><th>d</th><th>h</th><th>g</th><th></th></tr></thead><tbody></tbody></table></div></div>
+  <div class="row" style="margin-top:14px"><button id="btnSimNext" disabled>Yakunlash va natijani ko‘rish</button></div>
+  <p class="small mute">Yakunlagandan keyin bu bo‘limga qaytib bo‘lmaydi.</p>
+</section>
+
+<!-- 5 NATIJA -->
+<section id="s-res" data-step="5" hidden>
+  <h2>Natija</h2>
+  <div class="card" style="text-align:center">
+    <div class="mute small" id="rName"></div>
+    <div class="big" id="rTotal">0</div>
+    <div class="mute">ball / 100</div>
+    <div style="font-family:var(--f-head);font-size:28px;margin-top:6px" id="rGrade"></div>
+  </div>
+  <div class="card"><table id="rTable"></table></div>
+  <div id="review"></div>
+  <div class="card" id="sendBox">
+    <b>Natijani ustozga yuborish</b>
+    <p class="small mute" id="sendMsg" style="margin:6px 0 10px"></p>
+    <div class="row"><button id="btnSend">Natijani yuborish</button></div>
+    <div id="sendOut"></div>
+  </div>
+</section>
+
+<!-- TEACHER -->
+<section id="s-tch" hidden>
+  <h2>Natijalar jadvali</h2>
+  <div class="row" style="margin-bottom:8px"><button class="sec" id="btnTchBack">Orqaga</button><button class="sec" id="btnCsv">Jadvalni nusxalash</button></div>
+  <div class="card"><div id="tchSum" class="small mute"></div></div>
+  <div class="card" style="overflow-x:auto"><table id="tchT"><thead><tr><th>№</th><th>Ism</th><th>Guruh</th><th>Ball</th><th>Baho</th><th>Sim</th><th>O‘lch.</th><th>Belgi</th><th>Test</th></tr></thead><tbody></tbody></table></div>
+  <div id="csvOut"></div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+/* Ixtiyoriy: Google Sheets ga yuborish uchun Apps Script web-app manzilini shu yerga qo‘ying */
+const SHEET_URL='';
+const STEPS=['Kirish','O‘lchamlar','Belgi','Test','Simulyator','Natija'];
+const W={sim:30,ol:20,bel:24,test:26};
+const S={name:'',group:'',step:0,sim:{att:0,pass:0,nug:false,pts:0,log:[]},ol:{pts:null},bel:{pts:null},test:{pts:null},sent:false,ans:{ol:null,bel:null,test:null}};
+const store={get(){try{const j=localStorage.getItem('payv-lab-v1');return j?JSON.parse(j):null}catch(e){return null}},set(){try{localStorage.setItem('payv-lab-v1',JSON.stringify(S))}catch(e){}}};
+if(location.hash==='#qayta'){try{localStorage.removeItem('payv-lab-v1')}catch(e){}try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+const saved=store.get(); if(saved&&typeof saved==='object'){['name','group','step','sim','ol','bel','test','sent','ans'].forEach(k=>{if(saved[k]!==undefined)S[k]=saved[k]})}
+S.ans=S.ans||{ol:null,bel:null,test:null};
+const fmt=(x,n=1)=>Number(x).toFixed(n).replace('.',',');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function total(){return Math.round((S.sim.pts||0)+(S.ol.pts||0)+(S.bel.pts||0)+(S.test.pts||0))}
+function grade(t){return t>=86?[5,'a’lo']:t>=71?[4,'yaxshi']:t>=55?[3,'qoniqarli']:[2,'qoniqarsiz']}
+function paintTop(){
+  $('#liveScore').textContent=S.step===5?total()+' / 100':'';
+  $('#steps').innerHTML=STEPS.map((_,i)=>`<i class="${i<S.step?'on':i===S.step?'cur':''}" title="${STEPS[i]}"></i>`).join('');
+}
+function go(n){
+  S.step=n;
+  $$('section[data-step]').forEach(s=>s.hidden=Number(s.dataset.step)!==n);
+  $('#s-tch').hidden=true;
+  paintTop(); store.set(); window.scrollTo({top:0});
+  if(n===4) setTimeout(()=>{resize();},30);
+  if(n===5) renderResult();
+}
+
+/* ---------- intro ---------- */
+function introCheck(){S.name=$('#inName').value.trim();S.group=$('#inGroup').value.trim();store.set()}
+$('#inName').value=S.name||'';$('#inGroup').value=S.group||'';
+['#inName','#inGroup'].forEach(s=>['input','change','blur','keyup'].forEach(ev=>$(s).addEventListener(ev,introCheck)));
+$('#btnStart').addEventListener('click',()=>{
+  introCheck();
+  const m=$('#startMsg');
+  if(S.name.length<3||!S.group){m.hidden=false;m.textContent=S.name.length<3?'Ism va familiyangizni yozing.':'Guruhingizni yozing.';return}
+  m.hidden=true;go(1);
+});
+introCheck();
+
+/* ---------- simulation model ---------- */
+function model(I,t,P){
+  const R=(60+120/P)*1e-6;               // ohm: 2Rm+Rk+2Re, Rk falls as force grows
+  const Q=(I*1000)*(I*1000)*R*t;          // joule
+  const q=Q/2200;                         // relative to the heat needed for d = 4 mm
+  const d=q<0.35?0:4*Math.sqrt(q);
+  const h=q<0.35?0:Math.min(100,10+55*q);
+  const g=Math.max(2,5+3.2*P+6*(q-1));
+  const splash=q>1.5||(P<2&&q>1.1);
+  const probs=[];
+  if(q<0.35)probs.push('Birikma hosil bo‘lmadi: issiqlik yetarli emas. Tokni yoki vaqtni oshiring.');
+  else if(d<3.5)probs.push('Yadro kichik (d < 3,5 mm). Tokni yoki vaqtni biroz oshiring.');
+  else if(d>4.5)probs.push('Yadro katta (d > 4,5 mm). Tokni yoki vaqtni kamaytiring.');
+  if(splash)probs.push(P<2&&q<=1.5?'Bosim kam: kontakt qarshiligi katta, metall sachradi. Kuchni oshiring.':'Metall sachradi: issiqlik me’yordan oshdi.');
+  if(q>=0.35&&h>80)probs.push('Kirib erish h 80 % dan oshdi.');
+  if(q>=0.35&&h<20)probs.push('Kirib erish h 20 % dan kam.');
+  if(g>20)probs.push('Elektrod botig‘i g 20 % dan oshdi: siqish kuchi juda katta.');
+  const ok=!splash&&d>=3.5&&d<=4.5&&h>=20&&h<=80&&g<=20;
+  return {R,Q,q,d,h,g,splash,probs,ok};
+}
+['rI','rT','rP'].forEach(id=>$('#'+id).addEventListener('input',showVals));
+function vals(){return {I:+$('#rI').value,t:+$('#rT').value,P:+$('#rP').value}}
+function showVals(){const v=vals();$('#vI').textContent=fmt(v.I,v.I%1?1:0)+' kA';$('#vT').textContent=fmt(v.t,2)+' s';$('#vP').textContent=fmt(v.P,1)+' kN'}
+showVals();
+
+/* ---------- 3D ---------- */
+let renderer,scene,camera,rig,upE,loE,sheetU,sheetL,nugget,heatLight,cur,sparks,sparkV,clipPlane,cutOn=false,anim=null,rotY=-0.55,rotX=0.28,ok3d=false;
+function init3d(){
+  if(typeof THREE==='undefined'){$('#scene').innerHTML='<p style="color:#E8EDF2;padding:20px">3D ko‘rinish yuklanmadi. Hisob-kitob baribir ishlaydi.</p>';return}
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  }catch(e){$('#scene').innerHTML='<p style="color:#E8EDF2;padding:20px">Bu qurilma 3D ni qo‘llamaydi. Hisob-kitob baribir ishlaydi.</p>';return}
+  ok3d=true;
+  renderer.localClippingEnabled=true;renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+  $('#scene').appendChild(renderer.domElement);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(34,4/3,0.1,100);
+  scene.add(new THREE.AmbientLight(0xffffff,0.55));
+  const dl=new THREE.DirectionalLight(0xffffff,0.9);dl.position.set(4,6,5);scene.add(dl);
+  const dl2=new THREE.DirectionalLight(0x88aaff,0.35);dl2.position.set(-5,2,-4);scene.add(dl2);
+  heatLight=new THREE.PointLight(0xff6a2a,0,6);heatLight.position.set(0,0.3,1.2);scene.add(heatLight);
+  rig=new THREE.Group();scene.add(rig);
+  clipPlane=new THREE.Plane(new THREE.Vector3(-1,0,0),0);
+  const mS=c=>new THREE.MeshStandardMaterial({color:c,metalness:.65,roughness:.38,side:THREE.DoubleSide});
+  sheetU=new THREE.Mesh(new THREE.BoxGeometry(5,0.22,3),mS(0xb9c6d2));sheetU.position.y=0.11;
+  sheetL=new THREE.Mesh(new THREE.BoxGeometry(5,0.22,3),mS(0x8fa4b8));sheetL.position.y=-0.11;
+  rig.add(sheetU,sheetL);
+  const prof=[[0,0],[0.42,0],[0.8,0.9],[0.8,2.6],[0,2.6]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const eg=new THREE.LatheGeometry(prof,40);
+  const em=()=>new THREE.MeshStandardMaterial({color:0xc77d3a,metalness:.8,roughness:.3});
+  upE=new THREE.Mesh(eg,em());loE=new THREE.Mesh(eg,em());loE.rotation.x=Math.PI;
+  rig.add(upE,loE);
+  nugget=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),new THREE.MeshStandardMaterial({color:0xf2a65a,emissive:0xff5a1a,emissiveIntensity:0,roughness:.5}));
+  nugget.visible=false;rig.add(nugget);
+  const cg=new THREE.BufferGeometry();const cp=new Float32Array(48*3);cg.setAttribute('position',new THREE.BufferAttribute(cp,3));
+  cur=new THREE.Points(cg,new THREE.PointsMaterial({color:0xffe27a,size:0.09,transparent:true,opacity:0}));rig.add(cur);
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(70*3),3));
+  sparks=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffb347,size:0.1,transparent:true,opacity:0}));rig.add(sparks);sparkV=new Float32Array(70*3);
+  setGap(0.9);
+  const el=renderer.domElement;let dragX=null;
+  el.addEventListener('pointerdown',e=>{dragX=e.clientX;el.setPointerCapture(e.pointerId);el.style.cursor='grabbing'});
+  el.addEventListener('pointermove',e=>{if(dragX===null)return;rotY+=(e.clientX-dragX)*0.01;dragX=e.clientX});
+  const up=()=>{dragX=null;el.style.cursor='grab'};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  window.addEventListener('resize',resize);resize();
+  requestAnimationFrame(loop);
+}
+function resize(){if(!ok3d)return;const w=$('#scene').clientWidth,h=$('#scene').clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+function setGap(g){upE.position.y=0.22+g;loE.position.y=-0.22-g}
+function setCut(on){cutOn=on;[sheetU,sheetL].forEach(m=>{m.material.clippingPlanes=on?[clipPlane]:[];m.material.needsUpdate=true});
+  nugget.material.clippingPlanes=on?[clipPlane]:[];nugget.material.needsUpdate=true;
+  [upE,loE].forEach(m=>{m.material.clippingPlanes=on?[clipPlane]:[];m.material.needsUpdate=true});
+  $('#btnCut').textContent=on?'Butun ko‘rinish':'Kesim ko‘rinishi'}
+$('#btnCut').addEventListener('click',()=>{if(ok3d)setCut(!cutOn)});
+$('#btnReset').addEventListener('click',()=>{rotY=-0.55;rotX=0.28});
+const ease=x=>x<0?0:x>1?1:x*x*(3-2*x);
+function setStage(n){$$('#pills span').forEach((s,i)=>s.classList.toggle('on',i===n))}
+function placeNugget(res,k){const r=0.14*res.d*k;const ry=Math.max(0.02,(0.09+0.12*Math.min(1,res.h/100))*Math.min(1,k+0.1));nugget.scale.set(Math.max(r,0.001),ry,Math.max(r,0.001));nugget.visible=r>0.03}
+let last=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(!ok3d||$('#s-sim').hidden)return;
+  rig.rotation.y+=(rotY-rig.rotation.y)*0.2;rig.rotation.x+=(rotX-rig.rotation.x)*0.2;
+  camera.position.set(0,1.9,8.6);camera.lookAt(0,0.2,0);
+  let curOp=0,heat=0,gap=0.9;
+  if(anim){
+    const t=(now-anim.t0)/1000,r=anim.res;
+    if(t<0.8){setStage(0);gap=0.9*(1-ease(t/0.8))}
+    else if(t<2.0){setStage(1);gap=0;const k=ease((t-0.8)/1.2);heat=k;curOp=1;placeNugget(r,k);nugget.material.emissiveIntensity=1.2*k;nugget.material.color.setHex(0xffd08a);
+      if(r.splash&&!anim.burst){anim.burst=true;burst()}}
+    else if(t<2.9){setStage(2);gap=0;const k=ease((t-2.0)/0.9);heat=1-k;placeNugget(r,1);nugget.material.emissiveIntensity=1.2*(1-k);nugget.material.color.setHex(0xf2a65a)}
+    else if(t<3.6){setStage(3);gap=0.9*ease((t-2.9)/0.7);placeNugget(r,1);nugget.material.emissiveIntensity=0}
+    else{anim.done&&anim.done();anim=null;setStage(-1);gap=0.9}
+  }else{gap=0.9}
+  setGap(gap);heatLight.intensity=heat*2.6;
+  cur.material.opacity=curOp;
+  if(curOp){const a=cur.geometry.attributes.position;for(let i=0;i<48;i++){const u=((now*0.0012+i/48)%1);a.setXYZ(i,Math.sin(i*2.1+now*0.004)*0.28,2.4-4.8*u,Math.cos(i*1.7)*0.28)}a.needsUpdate=true}
+  if(sparks.material.opacity>0){const a=sparks.geometry.attributes.position;for(let i=0;i<70;i++){a.setXYZ(i,a.getX(i)+sparkV[i*3]*dt,a.getY(i)+sparkV[i*3+1]*dt,a.getZ(i)+sparkV[i*3+2]*dt);sparkV[i*3+1]-=6*dt}a.needsUpdate=true;sparks.material.opacity=Math.max(0,sparks.material.opacity-dt*0.9)}
+  renderer.render(scene,camera);
+}
+function burst(){const a=sparks.geometry.attributes.position;for(let i=0;i<70;i++){a.setXYZ(i,0,0,0);const ang=Math.random()*6.283,sp=1.5+Math.random()*3;sparkV[i*3]=Math.cos(ang)*sp;sparkV[i*3+1]=1+Math.random()*3;sparkV[i*3+2]=Math.sin(ang)*sp}a.needsUpdate=true;sparks.material.opacity=1}
+
+/* ---------- weld action ---------- */
+function weld(){
+  const v=vals(),res=model(v.I,v.t,v.P);
+  S.sim.att++;
+  $('#btnWeld').disabled=true;$('#attLbl').textContent='Urinish: '+S.sim.att;
+  nugget&&(nugget.visible=false);
+  const finish=()=>{
+    const row={n:S.sim.att,I:v.I,t:v.t,P:v.P,d:res.d,h:res.h,g:res.g,ok:res.ok};
+    S.sim.log.push(row);
+    if(res.d>0&&!res.splash)S.sim.nug=true;
+    if(res.ok&&!S.sim.pass)S.sim.pass=S.sim.att;
+    S.sim.pts=S.sim.pass?(S.sim.pass<=3?30:S.sim.pass<=6?25:20):(S.sim.nug?10:0);
+    showSimRes(v,res);paintTop();store.set();
+    $('#btnWeld').disabled=false;$('#btnSimNext').disabled=false;
+  };
+  if(ok3d){anim={t0:performance.now(),res,done:finish}}else{finish()}
+}
+$('#btnWeld').addEventListener('click',weld);
+function renderLog(){
+  $('#simLog').hidden=false;
+  $('#logT tbody').innerHTML=S.sim.log.map(x=>`<tr><td class="n">${x.n}</td><td class="n">${fmt(x.I,1)}</td><td class="n">${fmt(x.t,2)}</td><td class="n">${fmt(x.P,1)}</td><td class="n">${x.d?fmt(x.d,1):'—'}</td><td class="n">${x.d?fmt(x.h,0):'—'}</td><td class="n">${fmt(x.g,0)}</td><td>${x.ok?'<span class="tag ok">ha</span>':'<span class="tag bad">yo‘q</span>'}</td></tr>`).join('');
+}
+function showSimRes(v,r){
+  const box=$('#simRes');box.hidden=false;
+  const head=r.ok?'<span class="tag ok">Yaxshi nuqta</span>':'<span class="tag bad">Nuqta qabul qilinmadi</span>';
+  box.innerHTML=`${head}
+  <table style="margin-top:10px">
+   <tr><td>Qarshilik R = 2Rm + Rk + 2Re</td><td class="n">${fmt(r.R*1e6,0)} mkΩ</td></tr>
+   <tr><td>Issiqlik Q = I²·R·t</td><td class="n">${fmt(r.Q,0)} J</td></tr>
+   <tr><td>Yadro diametri d</td><td class="n">${r.d?fmt(r.d,1)+' mm':'—'}</td></tr>
+   <tr><td>Kirib erish h</td><td class="n">${r.d?fmt(r.h,0)+' %':'—'}</td></tr>
+   <tr><td>Elektrod botig‘i g</td><td class="n">${fmt(r.g,0)} %</td></tr>
+  </table>
+  ${r.ok?'<div class="note ok">Hamma talab bajarildi: d 3,5–4,5 mm, h 20–80 %, g ≤ 20 %, sachrash yo‘q.</div>':r.probs.map(p=>`<div class="note bad">${esc(p)}</div>`).join('')}`;
+  renderLog();
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('#btnSimNext').addEventListener('click',()=>go(5));
+
+/* ---------- section 2: dimensions ---------- */
+const OLA=[['A','d','Yadro diametri'],['B','g','Elektrod botig‘i'],['C','s','Varaq qalinligi'],['D','h','Kirib erish chuqurligi']];
+const OLB=[['E','t','Nuqtalar orasidagi qadam'],['F','c','Qatorlar oralig‘i'],['G','u','Nuqtadan chetgacha masofa'],['H','B','Nahlest (ustma-ust kengligi)']];
+// marker letters in the figure: A,B,C,D / E=t, F=c, G=u, H=B
+const OL_KEY={A:'d',B:'g',C:'s',D:'h',E:'t',F:'c',G:'u',H:'B'};
+function olSel(list,box){
+  const opts=list.map(x=>x[2]);
+  $(box).innerHTML=[...list].sort(()=>0).map(x=>`<div><label for="sel_${x[0]}">${x[0]} harfi nimani bildiradi?</label><select id="sel_${x[0]}" data-k="${x[0]}"><option value="">Tanlang</option>${opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select></div>`).join('');
+}
+olSel(OLA,'#olA');olSel(OLB,'#olB');
+const olAns={};OLA.concat(OLB).forEach(x=>olAns[x[0]]=x[2]);
+$('#btnOlCheck').addEventListener('click',()=>{
+  const sels=$$('#s-ol select');
+  if(sels.some(s=>!s.value)){$('#olRes').innerHTML='<div class="note bad">Hamma harfga javob tanlang.</div>';return}
+  let ok=0;const mine={};
+  sels.forEach(s=>{const k=s.dataset.k;mine[k]=s.value;if(olAns[k]===s.value)ok++});
+  S.ol.pts=ok*2.5;S.ans.ol=mine;go(2);
+});
+
+/* ---------- section 3: designation ---------- */
+const BEL=[
+ {txt:'Po‘lat varaq, s = 1,0 mm. Kontaktli nuqtali payvandlash, A guruhi. Chok chizmada old tomondan ko‘rsatilgan.',method:'Кт',size:'4',above:true,kind:'spot'},
+ {txt:'Po‘lat varaq, s = 2,0 mm. Kontaktli nuqtali payvandlash, B guruhi. Chok chizmada teskari tomondan ko‘rsatilgan.',method:'Кт',size:'5',above:false,kind:'spot'},
+ {txt:'Kontaktli chokli payvandlash: chok kengligi 6 mm, uchastka uzunligi 50 mm, qadam 100 mm. Old tomondan ko‘rsatilgan.',method:'Кш',size:'6x50/100',above:true,kind:'seam'}
+];
+$('#belBox').innerHTML=BEL.map((b,i)=>`<div class="card"><b>${i+1}-holat</b><p style="margin:6px 0 0">${esc(b.txt)}</p>
+ <label for="bs${i}">Standart</label><select id="bs${i}"><option value="">Tanlang</option><option>GOST 15878-79</option><option>GOST 2.312-72</option><option>GOST 5264-80</option></select>
+ <label for="bm${i}">Usul</label><select id="bm${i}"><option value="">Tanlang</option><option>Кт</option><option>Кр</option><option>Кш</option></select>
+ <label for="bz${i}">${b.kind==='seam'?'O‘lcham (kenglik × uzunlik / qadam), mm':'Yadro diametri d, mm'}</label><input type="text" id="bz${i}" inputmode="text" autocomplete="off" placeholder="${b.kind==='seam'?'masalan 3 × 20 / 40':'masalan 3'}">
+ <label for="bp${i}">Belgi javonning qayerida yoziladi?</label><select id="bp${i}"><option value="">Tanlang</option><option value="up">Javon ustida</option><option value="down">Javon ostida</option></select>
+ <div class="sc"><div class="small mute">Chizmada ko‘rinishi</div><div id="bv${i}"></div></div></div>`).join('');
+function normSize(s){return String(s).toLowerCase().replace(/[×хx*]/g,'x').replace(/\s+/g,'').replace(/,/g,'.')}
+function sizeOk(i,s){const b=BEL[i];if(b.kind==='seam')return normSize(s)===b.size;const n=parseFloat(normSize(s));return !isNaN(n)&&Math.abs(n-parseFloat(b.size))<0.001}
+function preview(i){
+  const st=$('#bs'+i).value,m=$('#bm'+i).value,z=$('#bz'+i).value.trim(),p=$('#bp'+i).value;
+  const txt=[st||'…',m||'…',z?z.replace(/x/gi,'×'):'…'].join(' - ');
+  const up=p!=='down';
+  $('#bv'+i).innerHTML=`<svg class="fig" viewBox="0 0 320 110" role="img" aria-label="Belgining chizmadagi ko‘rinishi" style="max-height:130px"><rect x="14" y="80" width="90" height="18" fill="#B9C6D2" stroke="#1c2733"/><line x1="52" y1="89" x2="66" y2="89" stroke="#1c2733" stroke-width="2.4"/><line x1="59" y1="82" x2="59" y2="96" stroke="#1c2733" stroke-width="2.4"/><line x1="62" y1="82" x2="104" y2="46" stroke="#1c2733" stroke-width="1.6"/><polygon points="62,82 70,80 66,74" fill="#1c2733" opacity="0"/><line x1="104" y1="46" x2="312" y2="46" stroke="#1c2733" stroke-width="1.6"/><text x="208" y="${up?39:64}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono,monospace" font-weight="600" fill="#1c2733">${esc(txt)}</text></svg>`;
+}
+BEL.forEach((b,i)=>{['#bs','#bm','#bz','#bp'].forEach(id=>{$(id+i).addEventListener('input',()=>preview(i))});preview(i)});
+$('#btnBelCheck').addEventListener('click',()=>{
+  const miss=BEL.some((b,i)=>!$('#bs'+i).value||!$('#bm'+i).value||!$('#bz'+i).value.trim()||!$('#bp'+i).value);
+  if(miss){$('#belRes').innerHTML='<div class="note bad">Barcha holatda hamma maydonni to‘ldiring.</div>';return}
+  let pts=0;const mine=[];
+  BEL.forEach((b,i)=>{
+    const st=$('#bs'+i).value,m=$('#bm'+i).value,z=$('#bz'+i).value.trim(),p=$('#bp'+i).value;
+    mine.push({st,m,z,p});
+    pts+=(st==='GOST 15878-79'?1:0)+(m===b.method?2:0)+(sizeOk(i,z)?3:0)+((p==='up')===b.above?2:0);
+  });
+  S.bel.pts=pts;S.ans.bel=mine;go(3);
+});
+
+/* ---------- section 4: test ---------- */
+const TEST=[
+ ['Tok kuchi ikki baravar oshirilsa (R va t o‘zgarmasa), ajraladigan issiqlik qanday o‘zgaradi?',['2 baravar ortadi','4 baravar ortadi','o‘zgarmaydi','2 baravar kamayadi'],1,'Q = I²·R·t, issiqlik tokning kvadratiga bog‘liq.'],
+ ['R = 2Rm + Rk + 2Re ifodasida qaysi qarshilikda ajraladigan issiqlik foydali?',['Rm','Rk','Re','Hammasida teng'],1,'Rk varaqlar orasida: nuqta aynan shu yerda hosil bo‘ladi.'],
+ ['Nuqtali payvandlashning 3-bosqichida nima bo‘ladi?',['Elektrodlar siqadi, tok yo‘q','Tok ulanadi','Tok o‘chadi, bosim saqlanadi','Bosim olinadi'],2,'Yadro siqilgan holda qotadi.'],
+ ['Chokli payvandlashda elektrod o‘rniga nima ishlatiladi?',['Aylanuvchi roliklar','Sim','Yoy','Lazer'],0,'Roliklar siqib, varaqni yurgizadi.'],
+ ['Relyefli payvandlashda nuqtalar qayerda hosil bo‘ladi?',['Istalgan joyda','Detaldagi relyeflar joyida','Faqat chetida','Elektrod uchida'],1,'Tok relyef (do‘ngcha) orqali o‘tadi.'],
+ ['Kirib erish chuqurligi h odatda varaq qalinligining qancha qismi bo‘ladi?',['5–10 %','20–80 %','90–100 %','100 % dan ortiq'],1,'GOST 15878-79 bo‘yicha 20–80 %.'],
+ ['Elektrod botig‘i g odatda qalinlikning qancha foizidan oshmasligi kerak?',['20 %','50 %','80 %','100 %'],0,'g ≤ 20 %.'],
+ ['u = 10 mm, c = 20 mm, n = 3 bo‘lsa, B = 2u + c(n − 1) qancha?',['40 mm','50 mm','60 mm','80 mm'],2,'2·10 + 20·2 = 60 mm.'],
+ ['Chizmada ko‘rinmaydigan chok qanday chiziladi?',['Yaxlit asosiy chiziq','Shtrix chiziq','Shtrix-punktir','Chizilmaydi'],1,'GOST 2.312-72: ko‘rinmaydigan chok shtrix chiziq bilan.'],
+ ['Ko‘rinadigan yakka payvand nuqta qanday belgilanadi?',['“+” belgisi','Doira','Uchburchak','Yaxlit chiziq'],0,'Ko‘rinmaydigan yakka nuqtalar tasvirlanmaydi.'],
+ ['Chizmada “old tomon” nima?',['Chizma ko‘rinishi bosh tomoni','Payvandlash bajariladigan tomon','Har doim chap tomon','Buyumning orqa tomoni'],1,'Old tomon — payvandlash bajariladigan tomon.'],
+ ['Old tomondan tasvirlangan chokning belgisi javonning qayerida yoziladi?',['Javon ustida','Javon ostida','Strelka yonida','Chizma burchagida'],0,'Teskari tomonniki esa javon ostida.'],
+ ['“GOST 15878-79 - Кш - 6 × 50 / 100” belgisidagi 100 nimani bildiradi?',['Chok kengligi','Uchastka uzunligi','Qadam','Qalinlik'],2,'6 — kenglik, 50 — uzunlik, 100 — qadam (mm).']
+];
+$('#testBox').innerHTML=TEST.map((q,i)=>`<div class="q" id="q${i}"><div class="t">${i+1}. ${esc(q[0])}</div>${q[1].map((o,j)=>`<label class="opt" for="t${i}_${j}"><input type="radio" name="q${i}" id="t${i}_${j}" value="${j}"><span>${esc(o)}</span></label>`).join('')}<div class="small mute why" hidden></div></div>`).join('');
+$('#btnTestCheck').addEventListener('click',()=>{
+  const un=TEST.findIndex((q,i)=>!document.querySelector(`input[name=q${i}]:checked`));
+  if(un>=0){$('#testRes').innerHTML=`<div class="note bad">${un+1}-savolga javob bering.</div>`;document.getElementById('q'+un).scrollIntoView({block:'center'});return}
+  let ok=0;const mine=[];
+  TEST.forEach((q,i)=>{const sel=+document.querySelector(`input[name=q${i}]:checked`).value;mine.push(sel);if(sel===q[2])ok++});
+  S.test.pts=ok*2;S.ans.test=mine;go(4);
+});
+
+/* ---------- result + sending ---------- */
+let dbh=null,usr=null,myId=null;
+function renderResult(){
+  const t=total(),g=grade(t);
+  $('#rName').textContent=S.name+' · '+S.group;
+  $('#rTotal').textContent=t;$('#rGrade').textContent='Baho: '+g[0]+' ('+g[1]+')';
+  $('#rTable').innerHTML=`<tr><th>Bo‘lim</th><th>Ball</th></tr>
+   <tr><td>1. O‘lchamlar</td><td class="n">${fmt(S.ol.pts||0,1)} / ${W.ol}</td></tr>
+   <tr><td>2. Belgi</td><td class="n">${S.bel.pts||0} / ${W.bel}</td></tr>
+   <tr><td>3. Test</td><td class="n">${S.test.pts||0} / ${W.test}</td></tr>
+   <tr><td>4. Simulyator${S.sim.pass?' (muvaffaqiyatli, '+S.sim.pass+'-urinishda)':''}</td><td class="n">${S.sim.pts||0} / ${W.sim}</td></tr>`;
+  $('#sendMsg').textContent=(dbh&&myId)||SHEET_URL?'Natija ustoz jadvaliga tushadi.':'Bu qurilmada natijani to‘g‘ridan-to‘g‘ri yuborib bo‘lmaydi. “Yuborish” tugmasi natija kodini beradi: uni ustozga yuboring yoki ekran rasmini oling.';
+  if(S.sent){$('#btnSend').textContent='Qayta yuborish'}
+  renderReview();
+}
+function renderReview(){
+  const a=S.ans||{};let h='';
+  const ok='<span class="tag ok">to‘g‘ri</span>';
+  if(a.ol){h+='<div class="card"><b>1. O‘lchamlar: javoblar tahlili</b><table style="margin-top:8px">'+Object.keys(olAns).map(k=>{const g=a.ol[k]===olAns[k];return `<tr><td><b>${k}</b></td><td>${esc(olAns[k])} (${OL_KEY[k]})</td><td>${g?ok:'<span class="tag bad">siz: '+esc(a.ol[k]||'—')+'</span>'}</td></tr>`}).join('')+'</table></div>'}
+  if(a.bel){h+='<div class="card"><b>2. Belgi: javoblar tahlili</b><table style="margin-top:8px">'+BEL.map((b,i)=>{const m=a.bel[i]||{};const good=m.st==='GOST 15878-79'&&m.m===b.method&&sizeOk(i,m.z||'')&&((m.p==='up')===b.above);const right=`GOST 15878-79 - ${b.method} - ${b.size.replace(/x/g,' × ').replace('/',' / ')}`;return `<tr><td><b>${i+1}</b></td><td><span class="desig">${esc(right)}</span><br><span class="small mute">${b.above?'javon ustida':'javon ostida'}</span>${good?'':'<br><span class="small">Siz: '+esc([m.st,m.m,m.z].join(' - '))+', '+(m.p==='up'?'javon ustida':'javon ostida')+'</span>'}</td><td>${good?ok:'<span class="tag bad">xato</span>'}</td></tr>`}).join('')+'</table><p class="small mute" style="margin:10px 0 0">Old tomon — payvandlash bajariladigan tomon. Old tomondan chizilgan chokning belgisi javon ustiga, teskari tomondan chizilganiniki javon ostiga yoziladi.</p></div>'}
+  if(a.test){h+='<div class="card"><b>3. Test: javoblar tahlili</b>'+TEST.map((q,i)=>{const sel=a.test[i];const good=sel===q[2];return `<div class="q"><div class="t">${i+1}. ${esc(q[0])}</div><div class="small">${good?ok+' '+esc(q[1][q[2]]):'<span class="tag bad">siz: '+esc(q[1][sel]||'—')+'</span> To‘g‘ri javob: <b>'+esc(q[1][q[2]])+'</b>'}</div><div class="small mute">${esc(q[3])}</div></div>`}).join('')+'</div>'}
+  $('#review').innerHTML=h;
+}
+function mkCode(){
+  const t=total(),raw=S.name+'|'+S.group+'|'+t+'|'+Math.round(S.sim.pts)+'|'+Math.round(S.ol.pts||0)+'|'+(S.bel.pts||0)+'|'+(S.test.pts||0);
+  let h=0;for(const c of raw)h=(h*31+c.charCodeAt(0))>>>0;
+  return raw+'|'+h.toString(36).toUpperCase();
+}
+$('#btnSend').addEventListener('click',async()=>{
+  const t=total(),g=grade(t),out=$('#sendOut'),btn=$('#btnSend');
+  btn.disabled=true;
+  const rec={name:S.name,group:S.group,total:t,grade:g[0],sim:Math.round(S.sim.pts||0),ol:S.ol.pts||0,bel:S.bel.pts||0,test:S.test.pts||0,attempts:S.sim.att,at:new Date().toISOString()};
+  let saved=false;
+  if(dbh&&myId){try{await dbh.collection('results').doc(myId).set(rec);saved=true}catch(e){saved=false}}
+  if(!saved&&SHEET_URL){try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(rec)});saved=true}catch(e){saved=false}}
+  btn.disabled=false;
+  if(saved){S.sent=true;store.set();out.innerHTML='<div class="note ok" style="margin-top:12px">Natija yuborildi. Ustoz jadvalida ko‘rinadi.</div>';btn.textContent='Qayta yuborish'}
+  else{const code=mkCode();out.innerHTML=`<div class="note bad" style="margin-top:12px">Natija ustoz jadvaliga yuborilmadi (bu qurilmada ruxsat yo‘q). Quyidagi kodni nusxalab ustozga yuboring.</div><div class="code" id="codeBox">${esc(code)}</div><div class="row" style="margin-top:8px"><button class="sec" id="btnCopyCode">Kodni nusxalash</button></div>`;
+    $('#btnCopyCode').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code);$('#btnCopyCode').textContent='Nusxalandi'}catch(e){const r=document.createRange();r.selectNodeContents($('#codeBox'));const s=getSelection();s.removeAllRanges();s.addRange(r)}});}
+});
+
+/* ---------- teacher ---------- */
+let unsub=null,rowsCache=[];
+function showTeacher(){
+  $$('section[data-step]').forEach(s=>s.hidden=true);$('#s-tch').hidden=false;window.scrollTo({top:0});
+  if(unsub)return;
+  unsub=dbh.collection('results').orderBy('total','desc').onSnapshot(snap=>{
+    rowsCache=snap.docs.map(d=>d.data());
+    const n=rowsCache.length,avg=n?rowsCache.reduce((a,r)=>a+(r.total||0),0)/n:0;
+    $('#tchSum').textContent=n?`Topshirganlar: ${n}. O‘rtacha ball: ${fmt(avg,1)}.`:'Hozircha hech kim topshirmagan. Talabalar natijani yuborganda bu yerda paydo bo‘ladi.';
+    $('#tchT tbody').innerHTML=rowsCache.map((r,i)=>`<tr><td class="n">${i+1}</td><td>${esc(r.name||'')}</td><td>${esc(r.group||'')}</td><td class="n"><b>${esc(r.total)}</b></td><td class="n">${esc(r.grade)}</td><td class="n">${esc(r.sim)}</td><td class="n">${esc(r.ol)}</td><td class="n">${esc(r.bel)}</td><td class="n">${esc(r.test)}</td></tr>`).join('');
+  },e=>{$('#tchSum').textContent='Natijalarni o‘qib bo‘lmadi.'});
+}
+$('#btnTch').addEventListener('click',showTeacher);
+$('#btnTchBack').addEventListener('click',()=>go(0));
+$('#btnCsv').addEventListener('click',async()=>{
+  const csv=['Ism\tGuruh\tBall\tBaho\tSim\tOlcham\tBelgi\tTest',...rowsCache.map(r=>[r.name,r.group,r.total,r.grade,r.sim,r.ol,r.bel,r.test].join('\t'))].join('\n');
+  try{await navigator.clipboard.writeText(csv);$('#csvOut').innerHTML='<div class="note ok">Jadval nusxalandi. Excel yoki Google Sheets ga qo‘yishingiz mumkin.</div>'}
+  catch(e){$('#csvOut').innerHTML='<div class="code" style="white-space:pre-wrap">'+esc(csv)+'</div>'}
+});
+
+/* ---------- boot ---------- */
+(async function boot(){
+  go(Math.min(S.step||0,5));
+  if(S.sim.att){$('#attLbl').textContent='Urinish: '+S.sim.att;$('#btnSimNext').disabled=false;renderLog()}
+  if(S.step===0)introCheck();
+  init3d();
+  try{
+    if(window.claude&&claude.use){
+      usr=await claude.use('user');dbh=await claude.use('db');
+      if(usr){try{myId=await usr.id()}catch(e){}
+        const ed=await usr.canEdit();if(ed&&dbh)$('#tchBox').hidden=false}
+    }
+  }catch(e){}
+})();
+})();
+</script>
+</body></html>
